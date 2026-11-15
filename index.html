@@ -41,6 +41,7 @@
     .photo-preview img{display:block;width:100%;height:160px;object-fit:contain;background:#f5f3ee}
     .photo-preview span{display:block;margin-top:10px;font-size:.78rem;letter-spacing:.06em}
     .photo-preview:hover,.photo-preview:focus-visible{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
+    .line-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:24px}.line-tools[hidden],.line-tools [hidden]{display:none}.line-tools .action{background:transparent;font:inherit;cursor:pointer}.line-status{font-size:.82rem;color:var(--muted)}
     .empty{grid-column:1/-1;padding:50px;border:1px solid #7e827d;text-align:center;background:rgba(245,243,237,.55)}
     footer{border-top:1px solid rgba(44,48,45,.45);padding:28px 0 50px;color:var(--muted);font-size:.8rem}
     @media(max-width:820px){.shell{width:min(100% - 24px,680px)}header{padding-top:50px}.intro,.controls{grid-template-columns:1fr}.controls{position:static}.grid{grid-template-columns:1fr}.total{white-space:normal}}
@@ -54,6 +55,11 @@
     <div class="intro">
       <p>將散落名片整理為客戶、營造廠與建築師三類。可依姓名、公司、電話、Email 或地址搜尋；原始名片照片保留於每筆資料中供核對。</p>
       <div class="total">整理日期 2026.11.15　／　共 9 筆</div>
+    </div>
+    <div class="line-tools" id="lineTools" hidden>
+      <span class="line-status" id="lineStatus" role="status"></span>
+      <a class="action" id="openInLine" hidden>在 LINE 開啟</a>
+      <button class="action" id="closeLine" type="button" hidden>返回 LINE</button>
     </div>
   </div></header>
   <main class="shell">
@@ -96,6 +102,36 @@
     }
     document.querySelectorAll('.tab').forEach(button=>button.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(item=>item.classList.remove('active'));button.classList.add('active');activeCategory=button.dataset.category;render()}));
     search.addEventListener('input',render);render();
+  </script>
+  <script>
+    // Fill in the public LIFF ID issued by LINE Developers; never put channel secrets here.
+    const LIFF_ID = '';
+    async function initializeLineApp(){
+      if(!LIFF_ID) return;
+      const panel=document.getElementById('lineTools');
+      const status=document.getElementById('lineStatus');
+      const openLink=document.getElementById('openInLine');
+      const closeButton=document.getElementById('closeLine');
+      openLink.href='https://liff.line.me/'+encodeURIComponent(LIFF_ID);
+      try{
+        await new Promise((resolve,reject)=>{
+          const sdk=document.createElement('script');
+          sdk.src='https://static.line-scdn.net/liff/edge/2/sdk.js';
+          sdk.charset='utf-8';sdk.onload=resolve;sdk.onerror=reject;
+          document.head.appendChild(sdk);
+        });
+        await liff.init({liffId:LIFF_ID,withLoginOnExternalBrowser:false});
+        const inLine=liff.isInClient();
+        status.textContent=inLine?'已在 LINE 開啟':'可使用 LINE 開啟名片資料庫';
+        openLink.hidden=inLine;closeButton.hidden=!inLine;
+        closeButton.addEventListener('click',()=>liff.closeWindow());
+        panel.hidden=false;
+      }catch{
+        status.textContent='LINE 連線暫時無法使用，仍可搜尋及查看名片。';
+        openLink.hidden=false;closeButton.hidden=true;panel.hidden=false;
+      }
+    }
+    initializeLineApp();
   </script>
 </body>
 </html>
